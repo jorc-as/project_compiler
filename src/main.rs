@@ -1,4 +1,5 @@
 mod lexer;
+mod parser;
 const SOURCE: &str = "fn main(): u8 {
     x: u8 = 10
     y: f32 = 10 90.0.2
@@ -7,5 +8,6 @@ const SOURCE: &str = "fn main(): u8 {
 fn main() {
     println!("{}",SOURCE);
     let mut lexer = lexer::Lexer::new(SOURCE);
-    lexer.scan_src();
+    let mut parser = parser::Parser::new(&mut lexer);
+    println!("{:?}", parser);
 }

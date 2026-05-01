@@ -1,46 +1,108 @@
+#[derive(Debug)]
 pub struct Lexer<'a> {
     source: &'a str,
     index: usize,
 }
 #[derive(Debug, PartialEq)]
 enum TokenType {
+    /* ( */
     LeftParenthesis,
+
+    /* ) */
     RightParenthesis,
+
+    /* [ */
     LeftBraces,
+
+    /* ] */
     RightBraces,
+
+    /* { */
     LeftBrackets,
+
+    /* } */
     RightBrackets,
+
+    /* . */
     Point,
+
+    /* + */
     Plus,
+
+    /* - */
     Minus,
+
+    /* / */
     Slash,
+
+    /* * */
     Star,
+
+    /* , */
     Comma,
+
+    /* : */
     Colon,
+
+    /* | */
     Pipe,
+
+    /* ! */
     Exclamation,
+
+    /* = */
     Equals,
+
+    /* == */
     Assign,
+
+    /* < */
     Less,
+
+    /* > */
     Greater,
+
+    /* <= */
     GreaterEq,
+
+    /* >= */
     LessEq,
+
+    /* % */
     Percent,
+
+    /* ++ */
     Increment,
+
+    /* -- */
     Decrement,
+
+    /* != */
     NotEqual,
+
+    /* << */
     LeftShift,
+
+    /* >> */
     RightShift,
+
+    /* & */
     Ampersand,
+
+    /* ^ */
     Caret,
+
+    /*   */
     Space,
+
+    /* \n */
     EOF,
+
+    /* 67 */
     Literal,
+
+    /* foo */
     Identifier,
-    //For,
-    //If,
-    //Else,
-    //Func,
 }
 #[derive(Debug)]
 pub struct Token<'a> {
@@ -51,12 +113,15 @@ impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
         Lexer { source, index: 0 }
     }
+    /// Looks at the next character without consuming it
     fn peek(&self) -> Option<char> {
         return self.source[self.index..].chars().next();
     }
+    /// Looks at the second next character without consuming it
     fn peek2(&self) -> Option<char> {
         return self.source[self.index..].chars().nth(1);
     }
+    /// Looks at the next character and consumes it
     fn next_char(&mut self) -> Option<char> {
         let nxt_char = self.source[self.index..].chars().next();
         if nxt_char.is_some(){
@@ -64,10 +129,12 @@ impl<'a> Lexer<'a> {
         }
         return nxt_char;
     }
+    /// Gets the source code scanned directly
     pub fn scan_src(&'a mut self) -> Vec<Token<'a>> {
         let mut tokens: Vec<Token> = Vec::new();
         for token in self.into_iter() {
-            if token.token_type != TokenType::EOF && token.token_type != TokenType::Space {
+            // We don't want the blank spaces, we only care about EOF
+            if token.token_type != TokenType::Space {
                 println!(
                     "Token type: {:?}, Token str: {}",
                     token.token_type, token.token_str
@@ -277,12 +344,13 @@ impl<'a> Iterator for Lexer<'a> {
                     token_str: "^",
                 });
             }
-            Some(' ') => {
-                return Some(Token {
-                    token_type: TokenType::Space,
-                    token_str: " ",
-                });
-            }
+            Some(' ') => return self.next(), 
+            //{
+            //    return Some(Token {
+            //        token_type: TokenType::Space,
+            //        token_str: " ",
+            //    });
+            //}
             Some('\n') => {
                 return Some(Token {
                     token_type: TokenType::EOF,
