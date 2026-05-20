@@ -3,8 +3,8 @@ pub struct Lexer<'a> {
     source: &'a str,
     index: usize,
 }
-#[derive(Debug, PartialEq)]
-enum TokenType {
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenType<'a> {
     /* ( */
     LeftParenthesis,
 
@@ -99,15 +99,32 @@ enum TokenType {
     EOF,
 
     /* 67 */
-    Literal,
+    Literal{
+        value: &'a str,
+        is_int: bool,
+    },
 
     /* foo */
-    Identifier,
+    Identifier{
+        name: &'a str,
+    },
+
+    /* fn */
+    KeyWord(KeyWord),
 }
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Clone)]
+pub enum KeyWord {
+   For,
+   If,
+   Else,
+   Fn,
+   Print,
+   Input,
+   Return,
+}
+#[derive(Debug,Clone)]
 pub struct Token<'a> {
-    token_type: TokenType,
-    token_str: &'a str,
+    pub token_type: TokenType<'a>,
 }
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Self {
@@ -136,8 +153,8 @@ impl<'a> Lexer<'a> {
             // We don't want the blank spaces, we only care about EOF
             if token.token_type != TokenType::Space {
                 println!(
-                    "Token type: {:?}, Token str: {}",
-                    token.token_type, token.token_str
+                    "Token type: {:?}",
+                    token.token_type
                 );
                 tokens.push(token);
             }
@@ -155,13 +172,11 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::Equals,
-                        token_str: "==",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Assign,
-                        token_str: "=",
                     });
                 }
             },
@@ -170,13 +185,11 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::Increment,
-                        token_str: "++",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Plus,
-                        token_str: "+",
                     });
                 }
             },
@@ -185,86 +198,72 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::Decrement,
-                        token_str: "--",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Minus,
-                        token_str: "-",
                     });
                 }
             },
             Some('*') => {
                 return Some(Token {
                     token_type: TokenType::Star,
-                    token_str: "*",
                 });
             }
             Some('/') => {
                 return Some(Token {
                     token_type: TokenType::Slash,
-                    token_str: "/",
                 });
             }
             Some('(') => {
                 return Some(Token {
                     token_type: TokenType::LeftParenthesis,
-                    token_str: "(",
                 });
             }
             Some(')') => {
                 return Some(Token {
                     token_type: TokenType::RightParenthesis,
-                    token_str: ")",
                 });
             }
             Some('{') => {
                 return Some(Token {
                     token_type: TokenType::LeftBraces,
-                    token_str: "{",
                 });
             }
             Some('}') => {
                 return Some(Token {
                     token_type: TokenType::RightBraces,
-                    token_str: "}",
                 });
             }
             Some('[') => {
                 return Some(Token {
                     token_type: TokenType::LeftBrackets,
-                    token_str: "[",
                 });
             }
             Some(']') => {
                 return Some(Token {
                     token_type: TokenType::RightBrackets,
-                    token_str: "]",
                 });
             }
             Some('.') => {
                 return Some(Token {
                     token_type: TokenType::Point,
-                    token_str: ".",
                 });
             }
             Some(':') => {
                 return Some(Token {
                     token_type: TokenType::Colon,
-                    token_str: ":",
                 });
             }
             Some(',') => {
                 return Some(Token {
                     token_type: TokenType::Comma,
-                    token_str: ",",
                 });
             }
             Some('|') => {
                 return Some(Token {
                     token_type: TokenType::Pipe,
-                    token_str: "|",
                 });
             }
             Some('!') => match self.peek() {
@@ -272,13 +271,11 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::NotEqual,
-                        token_str: "!=",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Exclamation,
-                        token_str: "!",
                     });
                 }
             },
@@ -287,20 +284,17 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::LessEq,
-                        token_str: "<=",
                     });
                 }
                 Some('<') => {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::LeftShift,
-                        token_str: "<<",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Less,
-                        token_str: "<",
                     });
                 }
             },
@@ -309,39 +303,33 @@ impl<'a> Iterator for Lexer<'a> {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::GreaterEq,
-                        token_str: ">=",
                     });
                 }
                 Some('>') => {
                     self.next_char();
                     return Some(Token {
                         token_type: TokenType::RightShift,
-                        token_str: ">>",
                     });
                 }
                 _ => {
                     return Some(Token {
                         token_type: TokenType::Greater,
-                        token_str: ">",
                     });
                 }
             },
             Some('%') => {
                 return Some(Token {
                     token_type: TokenType::Percent,
-                    token_str: "%",
                 });
             }
             Some('&') => {
                 return Some(Token {
                     token_type: TokenType::Ampersand,
-                    token_str: "&",
                 });
             }
             Some('^') => {
                 return Some(Token {
                     token_type: TokenType::Caret,
-                    token_str: "^",
                 });
             }
             Some(' ') => return self.next(), 
@@ -354,7 +342,6 @@ impl<'a> Iterator for Lexer<'a> {
             Some('\n') => {
                 return Some(Token {
                     token_type: TokenType::EOF,
-                    token_str: "\n",
                 });
             }
             Some(d @ '0'..='9') => {
@@ -370,8 +357,10 @@ impl<'a> Iterator for Lexer<'a> {
                                     }
                                     _ => {
                                         return Some(Token {
-                                            token_type: TokenType::Literal,
-                                            token_str: &self.source[start..self.index],
+                                            token_type: TokenType::Literal{
+                                                value: &self.source[start..self.index],
+                                                is_int: false,
+                                            }
                                         });
                                     }
                                 }
@@ -396,8 +385,10 @@ impl<'a> Iterator for Lexer<'a> {
                                             }
                                             _ => {
                                                 return Some(Token {
-                                                    token_type: TokenType::Literal,
-                                                    token_str: &self.source[start..self.index],
+                                                    token_type: TokenType::Literal{
+                                                        value: &self.source[start..self.index],
+                                                        is_int: false,
+                                                    }
                                                 });
                                             }
                                         }
@@ -405,15 +396,19 @@ impl<'a> Iterator for Lexer<'a> {
                                 }
                                 _ => {
                                     return Some(Token {
-                                        token_type: TokenType::Literal,
-                                        token_str: &self.source[start..self.index],
+                                        token_type: TokenType::Literal{
+                                            value: &self.source[start..self.index],
+                                            is_int: false,
+                                        }
                                     });
                                 }
                             },
                             _ => {
                                 return Some(Token {
-                                    token_type: TokenType::Literal,
-                                    token_str: &self.source[start..self.index],
+                                        token_type: TokenType::Literal{
+                                            value: &self.source[start..self.index],
+                                            is_int: true,
+                                        }
                                 });
                             }
                         }
@@ -433,13 +428,56 @@ impl<'a> Iterator for Lexer<'a> {
                         Some('_'..='z') => {
                             self.next_char();
                         }
-                        _ => break,
+                        _ =>{
+                            let text = &self.source[start..self.index];
+                            match text {
+                                "for" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::For),
+                                    });
+                                }
+                                "if" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::If),
+                                    });
+                                }
+                                "else" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::Else),
+                                    });
+                                }
+                                "fn" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::Fn),
+                                    });
+                                }
+                                "print" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::Print),
+                                    });
+                                }
+                                "input" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::Input),
+                                    });
+                                }
+                                "return" => {
+                                    return Some(Token {
+                                        token_type: TokenType::KeyWord(KeyWord::Return),
+                                    });
+                                }
+                                _ => {
+                                    return Some(Token {
+                                        token_type: TokenType::Identifier{
+                                            name: text,
+                                        },
+                                    });
+                                }
+                                
+                            }
+                        },
                     }
                 }
-                return Some(Token {
-                    token_type: TokenType::Identifier,
-                    token_str: &self.source[start..self.index],
-                });
             }
 
             _ => (),
